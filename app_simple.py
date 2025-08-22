@@ -30,6 +30,11 @@ def get_db_connection():
         ssl_disabled=False
     )
 
+@app.route('/')
+def root():
+    """Root endpoint"""
+    return jsonify({'message': 'SynapseGuard API is running!', 'status': 'online'})
+
 @app.route('/health')
 def health_check():
     """Health check endpoint"""
