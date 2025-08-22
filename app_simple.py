@@ -7,6 +7,7 @@ import uuid
 import asyncio
 import sys
 import json
+from datetime import datetime
 sys.path.append('/app')
 from orchestrator.agent_orchestrator import AgentOrchestrator
 from demo.data_generator import DemoDataGenerator
@@ -19,16 +20,21 @@ CORS(app)
 # Initialize AI components
 data_generator = DemoDataGenerator()
 
-# TiDB Serverless Connection
+# TiDB Serverless Connection with error handling
 def get_db_connection():
-    return mysql.connector.connect(
-        host=os.getenv('TIDB_HOST'),
-        port=4000,
-        user=os.getenv('TIDB_USER'),
-        password=os.getenv('TIDB_PASSWORD'),
-        database=os.getenv('TIDB_DATABASE'),
-        ssl_disabled=False
-    )
+    try:
+        return mysql.connector.connect(
+            host=os.getenv('TIDB_HOST'),
+            port=4000,
+            user=os.getenv('TIDB_USER'),
+            password=os.getenv('TIDB_PASSWORD'),
+            database=os.getenv('TIDB_DATABASE'),
+            ssl_disabled=False,
+            connect_timeout=10
+        )
+    except Exception as e:
+        print(f"Database connection failed: {e}")
+        return None
 
 @app.route('/')
 def root():
@@ -37,8 +43,12 @@ def root():
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'service': 'SynapseGuard Full AI System'})
+    """Health check endpoint - simplified for Railway"""
+    return jsonify({
+        'status': 'healthy', 
+        'service': 'SynapseGuard Full AI System',
+        'timestamp': datetime.now().isoformat()
+    })
 
 @app.route('/api/admin/cleanup', methods=['POST'])
 def cleanup_interventions():
