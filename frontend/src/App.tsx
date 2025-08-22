@@ -13,11 +13,13 @@ import PatientApp from './pages/PatientApp';
 
 // Components
 import Navigation from './components/Navigation';
+import ScrollToTop from './components/ScrollToTop';
 
 const App: React.FC = () => {
   return (
     <Router>
       <div className="App bg-gray-50 min-h-screen">
+        <ScrollToTop />
         <Navigation />
         <Toaster 
           position="top-right"
