@@ -20,21 +20,16 @@ CORS(app)
 # Initialize AI components
 data_generator = DemoDataGenerator()
 
-# TiDB Serverless Connection with error handling
+# TiDB Serverless Connection
 def get_db_connection():
-    try:
-        return mysql.connector.connect(
-            host=os.getenv('TIDB_HOST'),
-            port=4000,
-            user=os.getenv('TIDB_USER'),
-            password=os.getenv('TIDB_PASSWORD'),
-            database=os.getenv('TIDB_DATABASE'),
-            ssl_disabled=False,
-            connect_timeout=10
-        )
-    except Exception as e:
-        print(f"Database connection failed: {e}")
-        return None
+    return mysql.connector.connect(
+        host=os.getenv('TIDB_HOST'),
+        port=4000,
+        user=os.getenv('TIDB_USER'),
+        password=os.getenv('TIDB_PASSWORD'),
+        database=os.getenv('TIDB_DATABASE'),
+        ssl_disabled=False
+    )
 
 @app.route('/')
 def root():
@@ -43,12 +38,8 @@ def root():
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint - simplified for Railway"""
-    return jsonify({
-        'status': 'healthy', 
-        'service': 'SynapseGuard Full AI System',
-        'timestamp': datetime.now().isoformat()
-    })
+    """Health check endpoint"""
+    return jsonify({'status': 'healthy', 'service': 'SynapseGuard Full AI System'})
 
 @app.route('/api/admin/cleanup', methods=['POST'])
 def cleanup_interventions():
