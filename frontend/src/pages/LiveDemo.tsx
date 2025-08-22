@@ -51,7 +51,8 @@ const LiveDemo = () => {
 
   const setupDemo = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/setup/demo', {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${API_BASE_URL}/api/setup/demo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -85,7 +86,8 @@ const LiveDemo = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5001/api/demo/${scenario}`, {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${API_BASE_URL}/api/demo/${scenario}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patient_id: selectedPatient })
