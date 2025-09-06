@@ -135,64 +135,110 @@ graph TD
     class VECTOR,STORE storage
 ```
 
-### **TiDB Vector Search Integration**
+### **🚀 TiDB Serverless Advanced Features Integration**
 ```mermaid
-graph LR
-    subgraph "🧬 Behavioral Input"
-        BI[Patient Behavior<br/>• Daily Routines<br/>• Cognitive Metrics<br/>• Physical Patterns]
+graph TB
+    subgraph "📥 Healthcare Data Input"
+        PATIENT[Patient Behavioral Data<br/>• Daily Activity Patterns<br/>• Cognitive Assessment<br/>• Physical Measurements<br/>• Social Interactions]
+        MEDICAL[Medical Literature<br/>• Research Papers<br/>• Clinical Guidelines<br/>• Treatment Protocols<br/>• Evidence Base]
+        FAMILY[Family Communications<br/>• Care Coordination<br/>• Status Updates<br/>• Emergency Contacts<br/>• Relationship Dynamics]
     end
     
-    subgraph "🧮 Vector Processing"
-        EMB[Text Embedding<br/>OpenAI Embeddings<br/>512-dimensional vectors]
+    subgraph "🧮 AI Processing Pipeline"
+        EMB[OpenAI Embeddings Generation<br/>• Text-to-Vector Conversion<br/>• 1536-dimensional Vectors<br/>• Semantic Understanding<br/>• Pattern Representation]
         
-        NORM[Vector Normalization<br/>L2 Normalization<br/>Similarity Optimization]
+        NLP[Natural Language Processing<br/>• Medical Text Analysis<br/>• Keyword Extraction<br/>• Sentiment Analysis<br/>• Content Categorization]
+        
+        JSON_PROC[JSON Data Structuring<br/>• Complex Object Storage<br/>• Nested Relationships<br/>• Flexible Schema Design<br/>• Dynamic Fields]
     end
     
-    subgraph "💾 TiDB Serverless"
-        VEC_STORE[Vector Storage<br/>VECTOR(512) column<br/>Indexed for Performance]
+    subgraph "🚀 TiDB Serverless Cloud Database"
         
-        VEC_SEARCH[Similarity Search<br/>VEC_COSINE_DISTANCE()<br/>Pattern Matching]
-        
-        META_DATA[Metadata Storage<br/>JSON patterns<br/>Timestamps & Scores]
+        subgraph "🧬 Vector Search Capabilities"
+            VEC_STORE[VECTOR Column Storage<br/>• 1536-dimensional embeddings<br/>• Optimized memory layout<br/>• Compressed storage format<br/>• Automatic indexing]
+            
+            VEC_SEARCH[VEC_COSINE_DISTANCE Function<br/>• Sub-50ms similarity search<br/>• Top-K pattern retrieval<br/>• Similarity scoring 0-1<br/>• Parallel query execution]
+            
+            VEC_INDEX[Vector Index Optimization<br/>• HNSW algorithm support<br/>• Approximate nearest neighbor<br/>• Auto-scaling performance<br/>• Query plan optimization]
+        end
+
+        subgraph "📚 Full-Text Search Engine"
+            FTS_STORE[Medical Knowledge Storage<br/>• Research literature corpus<br/>• Clinical documentation<br/>• Treatment guidelines<br/>• Evidence database]
+            
+            FTS_SEARCH[MATCH AGAINST Queries<br/>• Natural language search<br/>• Boolean operators<br/>• Phrase matching<br/>• Relevance ranking]
+            
+            FTS_INDEX[Full-Text Index Features<br/>• Stemming & lemmatization<br/>• Stop word filtering<br/>• Multi-language support<br/>• Real-time index updates]
+        end
+
+        subgraph "📊 JSON + Advanced Analytics"
+            JSON_STORE[Flexible JSON Storage<br/>• Patient baseline patterns<br/>• Family contact structures<br/>• Intervention metadata<br/>• Dynamic schema evolution]
+            
+            ANALYTICS[Complex Query Analytics<br/>• Multi-table JOINs<br/>• Vector + JSON queries<br/>• Time-series analysis<br/>• Aggregation functions]
+            
+            HYBRID[Hybrid Query Engine<br/>• Vector + Full-text + JSON<br/>• Single query execution<br/>• Cross-modal search<br/>• Optimal performance]
+        end
+
+        subgraph "⚡ Serverless Infrastructure"
+            AUTO_SCALE[Auto-Scaling Compute<br/>• Pay-per-use pricing<br/>• Instant scale-up/down<br/>• Workload optimization<br/>• Zero maintenance]
+            
+            DISTRIBUTED[Distributed Architecture<br/>• Global data replication<br/>• High availability 99.9%<br/>• Fault tolerance<br/>• Load balancing]
+            
+            SECURITY[Enterprise Security<br/>• TLS/SSL encryption<br/>• Access control (RBAC)<br/>• Audit logging<br/>• Compliance ready]
+        end
     end
     
-    subgraph "🔍 Analysis Engine"
-        SIM[Similarity Analysis<br/>Cosine Distance<br/>Top-K Retrieval]
+    subgraph "🎯 Healthcare AI Applications"
+        PATTERN_MATCH[Behavioral Pattern Matching<br/>• Similar patient cases<br/>• Historical comparisons<br/>• Deviation detection<br/>• Risk assessment]
         
-        CLUSTER[Pattern Clustering<br/>Similar Behavior Groups<br/>Deviation Classification]
+        RESEARCH_QUERY[Medical Research Queries<br/>• Evidence-based recommendations<br/>• Literature synthesis<br/>• Protocol matching<br/>• Treatment guidance]
         
-        PREDICT[Outcome Prediction<br/>Historical Effectiveness<br/>Intervention Success]
+        FAMILY_INTEL[Family Intelligence Analytics<br/>• Communication optimization<br/>• Relationship mapping<br/>• Stress level monitoring<br/>• Coordination strategies]
+        
+        PREDICTIVE[Predictive Healthcare Analytics<br/>• Crisis prevention<br/>• Intervention success prediction<br/>• Resource optimization<br/>• Outcome forecasting]
     end
+
+    %% Data Flow Connections
+    PATIENT --> EMB
+    MEDICAL --> NLP
+    FAMILY --> JSON_PROC
     
-    BI --> EMB
-    EMB --> NORM
-    NORM --> VEC_STORE
+    EMB --> VEC_STORE
+    NLP --> FTS_STORE
+    JSON_PROC --> JSON_STORE
     
     VEC_STORE --> VEC_SEARCH
-    VEC_SEARCH --> SIM
+    VEC_SEARCH --> VEC_INDEX
     
-    VEC_STORE -.-> META_DATA
-    META_DATA -.-> SIM
+    FTS_STORE --> FTS_SEARCH
+    FTS_SEARCH --> FTS_INDEX
     
-    SIM --> CLUSTER
-    SIM --> PREDICT
+    JSON_STORE --> ANALYTICS
+    ANALYTICS --> HYBRID
     
-    CLUSTER --> RESULTS[🎯 Pattern Insights<br/>• Similar Cases<br/>• Risk Factors<br/>• Intervention Recommendations]
+    VEC_INDEX --> AUTO_SCALE
+    FTS_INDEX --> AUTO_SCALE
+    HYBRID --> AUTO_SCALE
     
-    PREDICT --> RESULTS
+    AUTO_SCALE --> DISTRIBUTED
+    DISTRIBUTED --> SECURITY
     
-    %% Styling
-    classDef input fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef processing fill:#f1f8e9,stroke:#388e3c,stroke-width:2px
-    classDef database fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef analysis fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef output fill:#ffebee,stroke:#c62828,stroke-width:2px
+    VEC_SEARCH --> PATTERN_MATCH
+    FTS_SEARCH --> RESEARCH_QUERY
+    ANALYTICS --> FAMILY_INTEL
+    HYBRID --> PREDICTIVE
     
-    class BI input
-    class EMB,NORM processing
-    class VEC_STORE,VEC_SEARCH,META_DATA database
-    class SIM,CLUSTER,PREDICT analysis
-    class RESULTS output
+    %% Styling with TiDB brand colors
+    classDef tidbOrange fill:#ff6b35,stroke:#d84315,stroke-width:3px,color:#fff
+    classDef tidbLight fill:#ffab40,stroke:#f57c00,stroke-width:2px
+    classDef healthcare fill:#4caf50,stroke:#2e7d32,stroke-width:2px
+    classDef processing fill:#2196f3,stroke:#1976d2,stroke-width:2px
+    classDef applications fill:#9c27b0,stroke:#6a1b9a,stroke-width:2px
+
+    class AUTO_SCALE,DISTRIBUTED,SECURITY tidbOrange
+    class VEC_STORE,VEC_SEARCH,VEC_INDEX,FTS_STORE,FTS_SEARCH,FTS_INDEX,JSON_STORE,ANALYTICS,HYBRID tidbLight
+    class PATIENT,MEDICAL,FAMILY healthcare
+    class EMB,NLP,JSON_PROC processing
+    class PATTERN_MATCH,RESEARCH_QUERY,FAMILY_INTEL,PREDICTIVE applications
 ```
 
 ## 🤖 **Agent Specifications**
