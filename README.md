@@ -153,7 +153,7 @@ graph LR
     end
     
     subgraph "🚀 TiDB Serverless Storage"
-        VE[TiDB Vector Embeddings<br/>• VECTOR(1536) Storage<br/>• VEC_COSINE_DISTANCE()<br/>• Auto-Scaling Performance<br/>• Cloud-Native Analytics]
+        VE[TiDB Vector Embeddings<br/>• VECTOR 1536-dim Storage<br/>• VEC_COSINE_DISTANCE<br/>• Auto-Scaling Performance<br/>• Cloud-Native Analytics]
     end
     
     SD --> CA
@@ -523,7 +523,7 @@ crisis_predictions (prediction_id, patient_id, risk_score, recommended_actions)
 
 ## 🏆 **TiDB AgentX Hackathon Excellence**
 
-### **🎯 Hackathon Requirements - 100% Complete**
+### **🎯 Hackathon Requirements - 100 Percent Complete**
 
 #### **✅ Multi-Step Agentic Workflow**
 - **7 Specialized AI Agents** working in coordinated sequence
@@ -551,7 +551,7 @@ crisis_predictions (prediction_id, patient_id, risk_score, recommended_actions)
 - **Real Healthcare Impact** - Production-ready neurodegenerative care system
 - **Cloud-Native Architecture** - Auto-scaling TiDB with multi-agent coordination
 - **Advanced Query Capabilities** - Hybrid vector-text-JSON queries in single operations
-- **Enterprise Performance** - Sub-50ms similarity search with 99.9% uptime
+- **Enterprise Performance** - Sub-50ms similarity search with 99.9 percent uptime
 - **Complete Healthcare Ecosystem** - 7-agent system powered by TiDB excellence
 
 ## 🔧 **Development & Deployment**
@@ -609,14 +609,14 @@ curl http://localhost:5001/health
 - **Response Time**: < 200ms for pattern analysis
 - **Throughput**: 1000+ concurrent patient monitoring
 - **Vector Search**: Sub-50ms similarity queries
-- **Uptime**: 99.9% with health checks and auto-recovery
+- **Uptime**: 99.9 percent with health checks and auto-recovery
 - **Scalability**: Auto-scaling TiDB Serverless backend
 
 ### **AI Performance**
-- **Pattern Recognition**: 95% accuracy on behavioral deviations
+- **Pattern Recognition**: 95 percent accuracy on behavioral deviations
 - **Crisis Prediction**: 2-5 day advance warning capability
-- **Intervention Success**: 85% effectiveness rate improvement
-- **Family Satisfaction**: 40% increase in care coordination
+- **Intervention Success**: 85 percent effectiveness rate improvement
+- **Family Satisfaction**: 40 percent increase in care coordination
 
 ## 🤝 **Contributing & Support**
 

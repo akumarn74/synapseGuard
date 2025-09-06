@@ -181,9 +181,9 @@ graph TB
         subgraph "⚡ Serverless Infrastructure"
             AUTO_SCALE[Auto-Scaling Compute<br/>• Pay-per-use pricing<br/>• Instant scale-up/down<br/>• Workload optimization<br/>• Zero maintenance]
             
-            DISTRIBUTED[Distributed Architecture<br/>• Global data replication<br/>• High availability 99.9%<br/>• Fault tolerance<br/>• Load balancing]
+            DISTRIBUTED[Distributed Architecture<br/>• Global data replication<br/>• High availability 99.9 percent<br/>• Fault tolerance<br/>• Load balancing]
             
-            SECURITY[Enterprise Security<br/>• TLS/SSL encryption<br/>• Access control (RBAC)<br/>• Audit logging<br/>• Compliance ready]
+            SECURITY[Enterprise Security<br/>• TLS/SSL encryption<br/>• Access control RBAC<br/>• Audit logging<br/>• Compliance ready]
         end
     end
     
