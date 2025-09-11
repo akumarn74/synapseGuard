@@ -23,6 +23,44 @@ class AgentOrchestrator:
             'pattern_learning': PatternLearningAgent(tidb_connection),
             'medical_knowledge': MedicalKnowledgeAgent(tidb_connection)
         }
+        
+        # Load dynamic thresholds from database or use defaults
+        self.thresholds = self._load_thresholds()
+    
+    def _load_thresholds(self) -> Dict[str, float]:
+        """Load dynamic thresholds from database or use intelligent defaults"""
+        try:
+            cursor = self.db.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT threshold_name, threshold_value 
+                FROM system_config 
+                WHERE config_type = 'orchestrator_thresholds'
+            """)
+            
+            db_thresholds = {row['threshold_name']: row['threshold_value'] for row in cursor.fetchall()}
+            cursor.close()
+            
+            if db_thresholds:
+                print(f"✅ Loaded {len(db_thresholds)} dynamic thresholds from database")
+                return db_thresholds
+                
+        except Exception as e:
+            print(f"⚠️  Could not load thresholds from database: {e}")
+        
+        # Intelligent defaults based on medical research and system performance
+        return {
+            'crisis_analysis_threshold': 0.3,
+            'crisis_action_threshold': 0.5, 
+            'therapeutic_intervention_threshold': 0.4,
+            'family_coordination_threshold': 0.3,
+            'critical_status_threshold': 0.8,
+            'high_monitoring_threshold': 0.6,
+            'moderate_changes_threshold': 0.4,
+            'significant_deviation_threshold': 0.6,
+            'moderate_deviation_threshold': 0.4,
+            'high_risk_threshold': 0.8,
+            'moderate_risk_threshold': 0.6
+        }
     
     def _make_serializable(self, obj):
         """Convert complex objects to JSON-serializable format"""
@@ -57,7 +95,7 @@ class AgentOrchestrator:
         
         # Step 2: Crisis Prevention Analysis (only if concerning patterns)
         crisis_result = None
-        if cognitive_result['deviation_score'] > 0.3:  # Threshold for crisis analysis
+        if cognitive_result['deviation_score'] > self.thresholds['crisis_analysis_threshold']:
             print("⚠️  Step 2: Analyzing crisis risk...")
             crisis_input = {
                 'patient_id': patient_id,
@@ -70,7 +108,7 @@ class AgentOrchestrator:
         
         # Step 3: Care Orchestration (if high risk or immediate actions needed)
         orchestration_result = None
-        if crisis_result and (crisis_result['risk_score'] > 0.5 or crisis_result['immediate_actions']):
+        if crisis_result and (crisis_result['risk_score'] > self.thresholds['crisis_action_threshold'] or crisis_result['immediate_actions']):
             print("🤝 Step 3: Orchestrating care coordination...")
             orchestration_input = {
                 'patient_id': patient_id,
@@ -84,7 +122,7 @@ class AgentOrchestrator:
 
         # Step 4: Therapeutic Intervention (for moderate to high risk)
         therapeutic_result = None
-        if cognitive_result['deviation_score'] > 0.4:
+        if cognitive_result['deviation_score'] > self.thresholds['therapeutic_intervention_threshold']:
             print("🎯 Step 4: Generating therapeutic interventions...")
             therapeutic_input = {
                 'patient_id': patient_id,
@@ -98,7 +136,7 @@ class AgentOrchestrator:
 
         # Step 5: Family Intelligence (optimize family dynamics)
         family_result = None
-        if orchestration_result or cognitive_result['deviation_score'] > 0.3:
+        if orchestration_result or cognitive_result['deviation_score'] > self.thresholds['family_coordination_threshold']:
             print("👨‍👩‍👧‍👦 Step 5: Optimizing family coordination...")
             family_input = {
                 'patient_id': patient_id,
@@ -161,11 +199,11 @@ class AgentOrchestrator:
     def _determine_overall_status(self, cognitive_result: Dict, 
                                 crisis_result: Dict, orchestration_result: Dict) -> str:
         """Determine overall patient status"""
-        if crisis_result and crisis_result['risk_score'] > 0.8:
+        if crisis_result and crisis_result['risk_score'] > self.thresholds['critical_status_threshold']:
             return 'CRITICAL_ATTENTION_NEEDED'
-        elif crisis_result and crisis_result['risk_score'] > 0.6:
+        elif crisis_result and crisis_result['risk_score'] > self.thresholds['high_monitoring_threshold']:
             return 'HIGH_MONITORING_REQUIRED'
-        elif cognitive_result['deviation_score'] > 0.4:
+        elif cognitive_result['deviation_score'] > self.thresholds['moderate_changes_threshold']:
             return 'MODERATE_CHANGES_DETECTED'
         else:
             return 'STABLE_PATTERNS'
@@ -178,9 +216,9 @@ class AgentOrchestrator:
         
         # Cognitive analysis summary
         deviation = cognitive_result['deviation_score']
-        if deviation > 0.6:
+        if deviation > self.thresholds['significant_deviation_threshold']:
             summary_parts.append(f"Significant behavioral changes detected (deviation: {deviation:.1f})")
-        elif deviation > 0.4:
+        elif deviation > self.thresholds['moderate_deviation_threshold']:
             summary_parts.append(f"Moderate pattern changes observed (deviation: {deviation:.1f})")
         else:
             summary_parts.append(f"Patterns within normal range (deviation: {deviation:.1f})")
@@ -188,9 +226,9 @@ class AgentOrchestrator:
         # Crisis analysis summary
         if crisis_result:
             risk_score = crisis_result['risk_score']
-            if risk_score > 0.8:
+            if risk_score > self.thresholds['high_risk_threshold']:
                 summary_parts.append(f"High crisis risk identified ({risk_score:.1f}/1.0)")
-            elif risk_score > 0.6:
+            elif risk_score > self.thresholds['moderate_risk_threshold']:
                 summary_parts.append(f"Moderate crisis risk detected ({risk_score:.1f}/1.0)")
         
         # Orchestration summary

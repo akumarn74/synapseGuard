@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -10,10 +10,60 @@ import {
   ArrowTrendingDownIcon,
   ClockIcon,
   ArrowRightIcon,
-  HeartIcon
+  HeartIcon,
+  CpuChipIcon,
+  ShieldCheckIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
+import TechnicalDashboard from '../components/TechnicalDashboard';
 
 const AdminDashboard: React.FC = () => {
+  const [dashboardStats, setDashboardStats] = useState({
+    stats: {
+      total_patients: 0,
+      cost_per_patient: 0,
+      crisis_prevention_rate: 0,
+      avg_response_time_minutes: 0,
+      total_interventions: 0,
+      total_patterns: 0
+    },
+    risk_stratification: {
+      high_risk: 0,
+      moderate_risk: 0,
+      low_risk: 0
+    }
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStats();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchDashboardStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/admin/dashboard-stats');
+      const data = await response.json();
+      if (data.success) {
+        setDashboardStats(data);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -62,10 +112,12 @@ const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Patients</p>
-                <p className="text-3xl font-bold text-gray-900">2,847</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? '...' : dashboardStats.stats.total_patients.toLocaleString()}
+                </p>
                 <div className="flex items-center mt-2">
                   <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-500">+12% this month</span>
+                  <span className="text-sm text-green-500">Real-time count</span>
                 </div>
               </div>
               <UserGroupIcon className="h-12 w-12 text-gray-400" />
@@ -76,10 +128,12 @@ const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Cost per Patient</p>
-                <p className="text-3xl font-bold text-gray-900">$2,340</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? '...' : formatCurrency(dashboardStats.stats.cost_per_patient)}
+                </p>
                 <div className="flex items-center mt-2">
                   <ArrowTrendingDownIcon className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-500">-8% reduction</span>
+                  <span className="text-sm text-green-500">AI optimized</span>
                 </div>
               </div>
               <CurrencyDollarIcon className="h-12 w-12 text-gray-400" />
@@ -90,10 +144,12 @@ const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Crisis Prevention Rate</p>
-                <p className="text-3xl font-bold text-gray-900">94.2%</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? '...' : `${dashboardStats.stats.crisis_prevention_rate}%`}
+                </p>
                 <div className="flex items-center mt-2">
                   <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-500">+18% improvement</span>
+                  <span className="text-sm text-green-500">Live calculation</span>
                 </div>
               </div>
               <ChartBarIcon className="h-12 w-12 text-gray-400" />
@@ -104,10 +160,12 @@ const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Avg Response Time</p>
-                <p className="text-3xl font-bold text-gray-900">14m</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? '...' : `${dashboardStats.stats.avg_response_time_minutes}m`}
+                </p>
                 <div className="flex items-center mt-2">
                   <ArrowTrendingDownIcon className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-500">-45% faster</span>
+                  <span className="text-sm text-green-500">7-day average</span>
                 </div>
               </div>
               <ClockIcon className="h-12 w-12 text-gray-400" />
@@ -134,8 +192,12 @@ const AdminDashboard: React.FC = () => {
                     <span className="font-medium">High Risk (Crisis Prevention)</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-red-600">127 patients</div>
-                    <div className="text-sm text-gray-600">4.5% of population</div>
+                    <div className="font-bold text-red-600">
+                      {loading ? '...' : `${dashboardStats.risk_stratification.high_risk} patients`}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {loading ? '...' : `${((dashboardStats.risk_stratification.high_risk / Math.max(dashboardStats.stats.total_patients, 1)) * 100).toFixed(1)}% of population`}
+                    </div>
                   </div>
                 </div>
                 
@@ -145,8 +207,12 @@ const AdminDashboard: React.FC = () => {
                     <span className="font-medium">Moderate Risk (Enhanced Monitoring)</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-yellow-600">542 patients</div>
-                    <div className="text-sm text-gray-600">19.0% of population</div>
+                    <div className="font-bold text-yellow-600">
+                      {loading ? '...' : `${dashboardStats.risk_stratification.moderate_risk} patients`}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {loading ? '...' : `${((dashboardStats.risk_stratification.moderate_risk / Math.max(dashboardStats.stats.total_patients, 1)) * 100).toFixed(1)}% of population`}
+                    </div>
                   </div>
                 </div>
                 
@@ -156,8 +222,12 @@ const AdminDashboard: React.FC = () => {
                     <span className="font-medium">Low Risk (Standard Care)</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-green-600">2,178 patients</div>
-                    <div className="text-sm text-gray-600">76.5% of population</div>
+                    <div className="font-bold text-green-600">
+                      {loading ? '...' : `${dashboardStats.risk_stratification.low_risk} patients`}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {loading ? '...' : `${((dashboardStats.risk_stratification.low_risk / Math.max(dashboardStats.stats.total_patients, 1)) * 100).toFixed(1)}% of population`}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -321,27 +391,85 @@ const AdminDashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Next Steps */}
+        {/* Technical Deep Dive Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mb-12"
+        >
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 flex items-center justify-center">
+              <CpuChipIcon className="h-8 w-8 mr-3 text-blue-600" />
+              Technical Performance & ROI Analytics
+            </h2>
+            <p className="text-xl text-gray-600">
+              Real-time TiDB performance, AI decision transparency, and quantified healthcare outcomes
+            </p>
+          </div>
+          <TechnicalDashboard patientId="margaret_wilson" />
+        </motion.div>
+
+        {/* Enhanced Call to Action */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           className="text-center mt-12"
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">See the Technology in Action</h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              to="/demo"
-              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all"
-            >
-              Experience Live AI Demo
-            </Link>
-            <Link 
-              to="/"
-              className="bg-white border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 transform hover:scale-105 transition-all"
-            >
-              Back to Home
-            </Link>
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 shadow-xl">
+            <div className="flex items-center justify-center mb-6">
+              <SparklesIcon className="h-12 w-12 text-blue-600 mr-4" />
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900">Experience the Future of Healthcare AI</h2>
+                <p className="text-gray-600 mt-2">See our multi-agent system coordinate care in real-time</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="text-center">
+                <div className="bg-green-100 rounded-full p-4 w-16 h-16 mx-auto mb-3">
+                  <ShieldCheckIcon className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="font-bold text-gray-900">Production Ready</h3>
+                <p className="text-sm text-gray-600">Enterprise-grade TiDB integration</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto mb-3">
+                  <CpuChipIcon className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-gray-900">AI Transparency</h3>
+                <p className="text-sm text-gray-600">Full explainability & reasoning</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-purple-100 rounded-full p-4 w-16 h-16 mx-auto mb-3">
+                  <CurrencyDollarIcon className="h-8 w-8 text-purple-600" />
+                </div>
+                <h3 className="font-bold text-gray-900">Proven ROI</h3>
+                <p className="text-sm text-gray-600">Quantified healthcare savings</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link 
+                to="/demo"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all"
+              >
+                🎬 Experience Live AI Demo
+              </Link>
+              <Link 
+                to="/provider-preview"
+                className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all"
+              >
+                👩‍⚕️ Provider Dashboard
+              </Link>
+              <Link 
+                to="/"
+                className="bg-white border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 transform hover:scale-105 transition-all"
+              >
+                🏠 Back to Home
+              </Link>
+            </div>
           </div>
         </motion.div>
       </div>

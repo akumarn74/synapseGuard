@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -13,6 +13,65 @@ import {
 } from '@heroicons/react/24/outline';
 
 const FamilyPortal: React.FC = () => {
+  const [patientStatus, setPatientStatus] = useState({
+    patient: {
+      name: '',
+      wellness_score: 0,
+      mood: 'good',
+      last_activity: '',
+      last_activity_time: null
+    },
+    recent_insights: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Default to Margaret Wilson, but this could be dynamic based on family login
+  const patientId = 'margaret_wilson';
+
+  useEffect(() => {
+    fetchPatientStatus();
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchPatientStatus, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchPatientStatus = async () => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/family/patient-status/${patientId}`);
+      const data = await response.json();
+      if (data.success) {
+        setPatientStatus(data);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch patient status:', error);
+      setLoading(false);
+    }
+  };
+
+  const getTimeAgo = (timestamp: string | null) => {
+    if (!timestamp) return 'Unknown';
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now.getTime() - time.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 1) return 'Less than an hour ago';
+    if (diffHours === 1) return '1 hour ago';
+    return `${diffHours} hours ago`;
+  };
+
+  const getMoodColor = (mood) => {
+    switch (mood) {
+      case 'good': return 'text-green-600';
+      case 'challenging': return 'text-red-600';
+      default: return 'text-blue-600';
+    }
+  };
+
+  const getMoodCapitalized = (mood) => {
+    return mood.charAt(0).toUpperCase() + mood.slice(1);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -58,10 +117,14 @@ const FamilyPortal: React.FC = () => {
           className="bg-white rounded-2xl shadow-xl p-8 mb-8"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Margaret's Status</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {loading ? "Patient's Status" : `${patientStatus.patient.name}'s Status`}
+            </h2>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-green-600 font-medium">Active Monitoring</span>
+              <span className="text-sm text-green-600 font-medium">
+                {loading ? 'Loading...' : 'Active Monitoring'}
+              </span>
             </div>
           </div>
           
@@ -70,8 +133,12 @@ const FamilyPortal: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Today's Wellness</p>
-                  <p className="text-3xl font-bold text-green-600">85%</p>
-                  <p className="text-sm text-green-600">Stable patterns</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {loading ? '...' : `${patientStatus.patient.wellness_score}%`}
+                  </p>
+                  <p className="text-sm text-green-600">
+                    {loading ? '...' : patientStatus.patient.wellness_score > 80 ? 'Stable patterns' : 'Monitoring needed'}
+                  </p>
                 </div>
                 <HeartIcon className="h-12 w-12 text-green-500" />
               </div>
@@ -81,8 +148,12 @@ const FamilyPortal: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Last Activity</p>
-                  <p className="text-lg font-bold text-blue-600">Morning Walk</p>
-                  <p className="text-sm text-blue-600">Completed 2 hours ago</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {loading ? '...' : (patientStatus.patient.last_activity || 'No recent activity')}
+                  </p>
+                  <p className="text-sm text-blue-600">
+                    {loading ? '...' : getTimeAgo(patientStatus.patient.last_activity_time)}
+                  </p>
                 </div>
                 <ClockIcon className="h-12 w-12 text-blue-500" />
               </div>
@@ -92,8 +163,10 @@ const FamilyPortal: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Mood Today</p>
-                  <p className="text-lg font-bold text-purple-600">Good</p>
-                  <p className="text-sm text-purple-600">Social & active</p>
+                  <p className={`text-lg font-bold ${getMoodColor(patientStatus.patient.mood)}`}>
+                    {loading ? '...' : getMoodCapitalized(patientStatus.patient.mood)}
+                  </p>
+                  <p className="text-sm text-purple-600">AI-assessed</p>
                 </div>
                 <UserIcon className="h-12 w-12 text-purple-500" />
               </div>
@@ -110,38 +183,40 @@ const FamilyPortal: React.FC = () => {
         >
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent AI Insights</h2>
           <div className="space-y-4">
-            <div className="flex items-start space-x-4 p-4 bg-green-50 rounded-xl">
-              <div className="bg-green-500 rounded-full p-2">
-                <HeartIcon className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">Sleep Pattern Improved</p>
-                <p className="text-gray-600 text-sm">Margaret's sleep quality increased by 15% this week. AI detected consistent bedtime routine.</p>
-                <p className="text-gray-500 text-xs mt-1">2 hours ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4 p-4 bg-blue-50 rounded-xl">
-              <div className="bg-blue-500 rounded-full p-2">
-                <ChartBarIcon className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">Cognitive Exercise Complete</p>
-                <p className="text-gray-600 text-sm">Daily brain training completed with 92% accuracy. Slight improvement from yesterday.</p>
-                <p className="text-gray-500 text-xs mt-1">4 hours ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4 p-4 bg-yellow-50 rounded-xl">
-              <div className="bg-yellow-500 rounded-full p-2">
-                <ExclamationTriangleIcon className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">Medication Reminder Needed</p>
-                <p className="text-gray-600 text-sm">Evening medication window opens in 30 minutes. Care team notified.</p>
-                <p className="text-gray-500 text-xs mt-1">30 minutes ago</p>
-              </div>
-            </div>
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading recent insights...</div>
+            ) : patientStatus.recent_insights.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No recent AI insights available</div>
+            ) : (
+              patientStatus.recent_insights.map((insight, index) => (
+                <div key={index} className={`flex items-start space-x-4 p-4 rounded-xl ${
+                  insight.type.includes('crisis') ? 'bg-red-50' :
+                  insight.type.includes('monitor') ? 'bg-yellow-50' : 'bg-green-50'
+                }`}>
+                  <div className={`rounded-full p-2 ${
+                    insight.type.includes('crisis') ? 'bg-red-500' :
+                    insight.type.includes('monitor') ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}>
+                    {insight.type.includes('crisis') ? (
+                      <ExclamationTriangleIcon className="h-5 w-5 text-white" />
+                    ) : insight.type.includes('pattern') ? (
+                      <ChartBarIcon className="h-5 w-5 text-white" />
+                    ) : (
+                      <HeartIcon className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">
+                      {insight.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
+                    <p className="text-gray-600 text-sm">{insight.message}</p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      {getTimeAgo(insight.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </motion.div>
 
@@ -156,7 +231,9 @@ const FamilyPortal: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
               <PhoneIcon className="h-8 w-8 mx-auto mb-3" />
-              <p className="font-medium">Call Margaret</p>
+              <p className="font-medium">
+                Call {loading ? '...' : (patientStatus.patient.name ? patientStatus.patient.name.split(' ')[0] : 'Patient')}
+              </p>
             </button>
             
             <button className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">

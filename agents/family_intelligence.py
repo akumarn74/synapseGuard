@@ -60,8 +60,43 @@ class FamilyIntelligenceAgent(BaseAgent):
             )
         }
     
+    async def _get_family_care_research(self) -> str:
+        """Get research evidence on family caregiving from medical database"""
+        try:
+            # Search for family caregiving research
+            search_query = "family caregiver support interventions dementia burden"
+            
+            research_results = await self.full_text_search(
+                search_query,
+                'medical_knowledge',
+                ['title', 'content', 'keywords'],
+                limit=3
+            )
+            
+            # Filter for real research papers
+            real_research = [
+                paper for paper in research_results
+                if 'AI Knowledge Generation' not in paper.get('source', '')
+            ]
+            
+            if real_research:
+                insights = []
+                for paper in real_research:
+                    content = paper.get('content', '')
+                    source = paper.get('source', 'Medical Journal')
+                    excerpt = content[:250] + '...'
+                    insights.append(f"Evidence from {source}: {excerpt}")
+                
+                return '\n'.join(insights)
+            else:
+                return "Apply evidence-based family caregiving support protocols from clinical literature."
+                
+        except Exception as e:
+            print(f"Family care research retrieval failed: {e}")
+            return "Use established family support guidelines from medical research."
+    
     async def _analyze_family_dynamics(self, patient_id: str) -> Dict:
-        """AI-powered analysis of family dynamics and relationships"""
+        """Evidence-based analysis of family dynamics using medical research"""
         try:
             # Get family structure and contact history
             cursor = self.db.cursor(dictionary=True)
@@ -86,9 +121,15 @@ class FamilyIntelligenceAgent(BaseAgent):
             
             comm_history = cursor.fetchall()
             
-            # Create AI prompt for family dynamics analysis
+            # Get research-based family care insights
+            family_care_research = await self._get_family_care_research()
+            
+            # Create evidence-based prompt for family dynamics analysis
             prompt = f"""
-            You are a family systems therapist specializing in healthcare crisis management. Analyze family dynamics for optimal care coordination.
+            Based on established medical research on family caregiving dynamics:
+            
+            RESEARCH EVIDENCE:
+            {family_care_research}
 
             FAMILY STRUCTURE:
             Primary Caregiver: {family_contacts.get('primary_caregiver', {}).get('name', 'Unknown')} ({family_contacts.get('primary_caregiver', {}).get('relationship', 'Unknown')})
@@ -96,8 +137,7 @@ class FamilyIntelligenceAgent(BaseAgent):
             Family Members:
             {self._format_family_members(family_contacts.get('family_members', []))}
             
-            Healthcare Providers:
-            {self._format_healthcare_providers(family_contacts.get('healthcare_providers', []))}
+            Analyze based on evidence-based family care research.
 
             RECENT COMMUNICATION PATTERNS:
             {self._format_communication_history(comm_history)}

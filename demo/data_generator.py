@@ -8,13 +8,16 @@ class DemoDataGenerator:
     """Generate realistic demo data for SynapseGuard hackathon demo"""
     
     def __init__(self):
-        self.patient_profiles = {
+        import os
+        
+        # Fallback profiles if database is unavailable
+        self.fallback_profiles = {
             'margaret_wilson': {
                 'name': 'Margaret Wilson',
                 'age': 72,
                 'diagnosis': 'Early-stage Alzheimers',
                 'severity_level': 'mild',
-                'baseline_wake_time': 7.0,  # 7:00 AM
+                'baseline_wake_time': 7.0,
                 'baseline_routine_completion': 0.95,
                 'baseline_activity_level': 0.8
             },
@@ -23,11 +26,58 @@ class DemoDataGenerator:
                 'age': 68,
                 'diagnosis': 'Mild Cognitive Impairment',
                 'severity_level': 'mild',
-                'baseline_wake_time': 6.5,  # 6:30 AM
+                'baseline_wake_time': 6.5,
                 'baseline_routine_completion': 0.90,
                 'baseline_activity_level': 0.75
             }
         }
+        
+        # Dynamic patient profiles loaded from database
+        self.patient_profiles = {}
+        self.db_config = {
+            'host': os.getenv('TIDB_HOST'),
+            'user': os.getenv('TIDB_USER'),
+            'password': os.getenv('TIDB_PASSWORD'),
+            'database': os.getenv('TIDB_DATABASE'),
+            'port': 4000,
+            'ssl_disabled': False
+        }
+        self._load_patient_profiles()
+    
+    def _load_patient_profiles(self):
+        """Load patient profiles dynamically from TiDB database"""
+        try:
+            import mysql.connector
+            db = mysql.connector.connect(**self.db_config)
+            cursor = db.cursor(dictionary=True)
+            
+            cursor.execute("""
+                SELECT patient_id, name, age, diagnosis, severity_level, baseline_patterns
+                FROM patients
+            """)
+            
+            patients = cursor.fetchall()
+            for patient in patients:
+                baseline = json.loads(patient['baseline_patterns'] or '{}')
+                daily_routine = baseline.get('daily_routine', {})
+                
+                self.patient_profiles[patient['patient_id']] = {
+                    'name': patient['name'],
+                    'age': patient['age'],
+                    'diagnosis': patient['diagnosis'],
+                    'severity_level': patient['severity_level'],
+                    'baseline_wake_time': daily_routine.get('wake_time', 7.0),
+                    'baseline_routine_completion': daily_routine.get('completion_rate', 0.9),
+                    'baseline_activity_level': daily_routine.get('activity_level', 0.8)
+                }
+            
+            cursor.close()
+            db.close()
+            print(f"✅ Loaded {len(self.patient_profiles)} patient profiles from database")
+            
+        except Exception as e:
+            print(f"⚠️  Failed to load patients from database: {e}")
+            self.patient_profiles = self.fallback_profiles.copy()
     
     def generate_normal_day_data(self, patient_id: str) -> Dict[str, Any]:
         """Generate data for a normal day"""
@@ -114,55 +164,81 @@ class DemoDataGenerator:
         }
     
     def generate_patient_family_contacts(self, patient_id: str) -> Dict[str, Any]:
-        """Generate realistic family contact information"""
-        contacts = {
-            'margaret_wilson': {
-                'primary_caregiver': {
-                    'name': 'Sarah Wilson',
-                    'relationship': 'daughter',
-                    'phone': '+1-555-0123',
-                    'email': 'sarah.wilson@email.com',
-                    'patient_name': 'Margaret Wilson'
-                },
-                'family_members': [
-                    {
-                        'name': 'Michael Wilson',
-                        'relationship': 'son',
-                        'phone': '+1-555-0124',
-                        'email': 'michael.wilson@email.com'
-                    },
-                    {
-                        'name': 'Emma Thompson',
-                        'relationship': 'granddaughter',
-                        'phone': '+1-555-0125',
-                        'email': 'emma.thompson@email.com'
-                    }
-                ],
-                'healthcare_providers': [
-                    {
-                        'name': 'Dr. Jennifer Martinez',
-                        'type': 'primary_care',
-                        'phone': '+1-555-0200',
-                        'email': 'j.martinez@healthcenter.com'
-                    },
-                    {
-                        'name': 'Dr. Robert Kim',
-                        'type': 'neurologist',
-                        'phone': '+1-555-0201',
-                        'email': 'r.kim@neurocenter.com'
-                    }
-                ],
-                'emergency_contacts': [
-                    {
-                        'name': 'Emergency Services',
-                        'phone': '911'
-                    },
-                    {
-                        'name': 'Sarah Wilson (Primary)',
-                        'phone': '+1-555-0123'
-                    }
-                ]
-            }
-        }
+        """Load family contact information from database or generate realistic data"""
+        try:
+            import mysql.connector
+            db = mysql.connector.connect(**self.db_config)
+            cursor = db.cursor(dictionary=True)
+            
+            cursor.execute("""
+                SELECT family_contacts FROM patients WHERE patient_id = %s
+            """, (patient_id,))
+            
+            result = cursor.fetchone()
+            cursor.close()
+            db.close()
+            
+            if result and result['family_contacts']:
+                return json.loads(result['family_contacts'])
+                
+        except Exception as e:
+            print(f"⚠️  Failed to load family contacts from database: {e}")
         
-        return contacts.get(patient_id, contacts['margaret_wilson'])
+        # Fallback: Generate realistic family contacts based on patient profile
+        profile = self.patient_profiles.get(patient_id, self.patient_profiles.get('margaret_wilson', {}))
+        patient_name = profile.get('name', 'Unknown Patient')
+        
+        # Generate realistic contacts based on patient demographics
+        return self._generate_realistic_contacts(patient_id, patient_name)
+    
+    def _generate_realistic_contacts(self, patient_id: str, patient_name: str) -> Dict[str, Any]:
+        """Generate realistic family contacts for any patient"""
+        # Extract first and last name
+        name_parts = patient_name.split()
+        first_name = name_parts[0] if name_parts else 'Patient'
+        last_name = name_parts[-1] if len(name_parts) > 1 else 'Unknown'
+        
+        # Common family names and relationships
+        family_names = [
+            f"{first_name.lower()}.{last_name.lower()}",
+            f"{first_name[0].lower()}{last_name.lower()}",
+            f"{last_name.lower()}{first_name[0].lower()}"
+        ]
+        
+        base_phone = random.randint(5550100, 5559999)
+        
+        return {
+            'primary_caregiver': {
+                'name': f"{random.choice(['Sarah', 'Michael', 'Jennifer', 'David', 'Lisa'])} {last_name}",
+                'relationship': random.choice(['daughter', 'son', 'spouse']),
+                'phone': f'+1-{base_phone}',
+                'email': f"{family_names[0]}@email.com",
+                'patient_name': patient_name
+            },
+            'family_members': [
+                {
+                    'name': f"{random.choice(['Alex', 'Emma', 'Jordan', 'Taylor'])} {last_name}",
+                    'relationship': random.choice(['child', 'grandchild', 'sibling']),
+                    'phone': f'+1-{base_phone + 1}',
+                    'email': f"{family_names[1]}@email.com"
+                }
+            ],
+            'healthcare_providers': [
+                {
+                    'name': f"Dr. {random.choice(['Martinez', 'Kim', 'Johnson', 'Smith', 'Brown'])}",
+                    'type': 'primary_care',
+                    'phone': f'+1-{base_phone + 100}',
+                    'email': f"doctor{random.randint(1,999)}@healthcenter.com"
+                }
+            ],
+            'emergency_contacts': [
+                {
+                    'name': 'Emergency Services',
+                    'phone': '911'
+                },
+                {
+                    'name': f"{random.choice(['Sarah', 'Michael', 'Jennifer'])} {last_name} (Primary)",
+                    'phone': f'+1-{base_phone}'
+                }
+            ]
+        }

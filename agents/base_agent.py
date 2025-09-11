@@ -181,15 +181,47 @@ class BaseAgent(ABC):
     
     async def full_text_search(self, query: str, table: str, 
                              columns: List[str], limit: int = 5) -> List[Dict]:
-        """Perform full-text search in TiDB"""
-        column_str = ', '.join(columns)
-        query_sql = f"""
-        SELECT *, MATCH({column_str}) AGAINST (%s) as relevance
-        FROM {table}
-        WHERE MATCH({column_str}) AGAINST (%s)
-        ORDER BY relevance DESC
-        LIMIT %s
-        """
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute(query_sql, (query, query, limit))
-        return cursor.fetchall()
+        """Perform full-text search in TiDB with compatibility fallback"""
+        try:
+            # Try MATCH() AGAINST() first for TiDB Serverless
+            column_str = ', '.join(columns)
+            query_sql = f"""
+            SELECT *, MATCH({column_str}) AGAINST (%s) as relevance
+            FROM {table}
+            WHERE MATCH({column_str}) AGAINST (%s)
+            ORDER BY relevance DESC
+            LIMIT %s
+            """
+            cursor = self.db.cursor(dictionary=True)
+            cursor.execute(query_sql, (query, query, limit))
+            return cursor.fetchall()
+        except Exception as e:
+            print(f"MATCH() AGAINST() not supported, using LIKE fallback: {e}")
+            # Fallback to LIKE-based search for compatibility
+            search_terms = query.lower().split()[:3]  # Use first 3 words
+            conditions = []
+            params = []
+            
+            for column in columns:
+                for term in search_terms:
+                    conditions.append(f"LOWER({column}) LIKE %s")
+                    params.append(f"%{term}%")
+            
+            where_clause = " OR ".join(conditions)
+            fallback_sql = f"""
+            SELECT * FROM {table}
+            WHERE {where_clause}
+            ORDER BY knowledge_id DESC
+            LIMIT %s
+            """
+            params.append(limit)
+            
+            cursor = self.db.cursor(dictionary=True)
+            cursor.execute(fallback_sql, params)
+            results = cursor.fetchall()
+            
+            # Add synthetic relevance score
+            for i, result in enumerate(results):
+                result['relevance'] = 1.0 - (i * 0.1)  # Decreasing relevance
+                
+            return results

@@ -25,6 +25,9 @@ class CrisisPreventionAgent(BaseAgent):
             patient_id, cognitive_analysis
         )
         
+        # Also search our real research database for relevant papers
+        real_research_insights = await self._search_real_research_database(cognitive_analysis)
+        
         # Step 3: Generate prevention strategies
         prevention_actions = await self._generate_prevention_strategies(
             risk_assessment, medical_insights
@@ -49,7 +52,9 @@ class CrisisPreventionAgent(BaseAgent):
             'confidence': risk_assessment['confidence'],
             'prevention_actions': prevention_actions,
             'immediate_actions': immediate_actions,
-            'medical_insights': len(medical_insights)
+            'medical_literature_insights': medical_insights + real_research_insights,
+            'medical_insights_count': len(medical_insights) + len(real_research_insights),
+            'risk_level': 'high' if risk_assessment['risk_score'] > 0.7 else 'medium' if risk_assessment['risk_score'] > 0.4 else 'low'
         }
     
     async def _calculate_risk_score(self, patient_id: str, 
@@ -167,6 +172,63 @@ class CrisisPreventionAgent(BaseAgent):
             factors.append(0.4)
         
         return sum(factors) / len(factors) if factors else 0.5
+    
+    async def _search_real_research_database(self, cognitive_analysis: Dict) -> List[Dict]:
+        """Search our comprehensive medical research database for relevant papers"""
+        try:
+            # Build search terms based on cognitive analysis
+            deviation_score = cognitive_analysis.get('deviation_score', 0.5)
+            alert_level = cognitive_analysis.get('alert_level', 'medium')
+            
+            search_terms = ['crisis', 'prevention', 'alzheimer', 'dementia', 'behavioral']
+            
+            if deviation_score > 0.7:
+                search_terms.extend(['emergency', 'acute', 'intervention'])
+            elif deviation_score > 0.4:
+                search_terms.extend(['early', 'detection', 'monitoring'])
+            
+            # Search our medical_knowledge table
+            cursor = self.db.cursor(dictionary=True)
+            
+            # Use LIKE searches since TiDB Serverless doesn't support MATCH AGAINST
+            search_conditions = []
+            search_params = []
+            
+            for term in search_terms[:3]:  # Limit to 3 terms for performance
+                search_conditions.append("(title LIKE %s OR content LIKE %s OR keywords LIKE %s)")
+                search_params.extend([f'%{term}%', f'%{term}%', f'%{term}%'])
+            
+            query = f"""
+            SELECT knowledge_id, title, content, source, publication_date, relevance_score
+            FROM medical_knowledge 
+            WHERE ({' OR '.join(search_conditions)})
+            AND publication_date >= '2020-01-01'
+            ORDER BY relevance_score DESC, publication_date DESC
+            LIMIT 5
+            """
+            
+            cursor.execute(query, search_params)
+            results = cursor.fetchall()
+            
+            # Format results for frontend display
+            formatted_results = []
+            for result in results:
+                formatted_results.append({
+                    'knowledge_id': result['knowledge_id'],
+                    'title': result['title'],
+                    'content': result['content'][:500] + '...' if len(result['content']) > 500 else result['content'],
+                    'source': result['source'],
+                    'publication_date': str(result['publication_date']),
+                    'relevance_score': result['relevance_score'],
+                    'type': 'research_paper'
+                })
+            
+            cursor.close()
+            return formatted_results
+            
+        except Exception as e:
+            print(f"Error searching research database: {e}")
+            return []
     
     async def _search_medical_literature(self, patient_id: str, 
                                        cognitive_analysis: Dict) -> List[Dict]:

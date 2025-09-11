@@ -64,5 +64,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 5000
 
-# Start production server with gunicorn (Simple Demo System)
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app_simple:app"]
+# Start production server with Flask-SocketIO (WebSocket Support)
+EXPOSE $PORT
+CMD ["python", "app_simple.py"]

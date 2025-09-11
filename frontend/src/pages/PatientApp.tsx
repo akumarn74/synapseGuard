@@ -48,12 +48,16 @@ interface CognitiveGame {
 const PatientApp: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [patientData, setPatientData] = useState<PatientData>({
-    name: 'Margaret Wilson',
-    age: 72,
-    todayScore: 85,
+    name: '',
+    age: 0,
+    todayScore: 0,
     mood: 'good',
-    lastActivity: 'Morning walk completed'
+    lastActivity: ''
   });
+  const [loading, setLoading] = useState(true);
+
+  // Default to Margaret Wilson, but this could be dynamic based on patient login
+  const patientId = 'margaret_wilson';
   
   const [todayActivities] = useState<Activity[]>([
     { time: '8:00 AM', activity: 'Morning medication', completed: true, type: 'medication' },
@@ -83,8 +87,32 @@ const PatientApp: React.FC = () => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
+    
+    // Fetch patient data
+    fetchPatientData();
+    
     return () => clearInterval(timer);
   }, []);
+
+  const fetchPatientData = async () => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/family/patient-status/${patientId}`);
+      const data = await response.json();
+      if (data.success) {
+        setPatientData({
+          name: data.patient.name,
+          age: 72, // Would come from patient profile
+          todayScore: data.patient.wellness_score,
+          mood: data.patient.mood,
+          lastActivity: data.patient.last_activity || 'No recent activity'
+        });
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch patient data:', error);
+      setLoading(false);
+    }
+  };
 
   const getTimeOfDay = () => {
     const hour = currentTime.getHours();
@@ -153,7 +181,9 @@ const PatientApp: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">{timeOfDay.greeting}</h1>
-                <p className="text-lg text-gray-600">{patientData.name}</p>
+                <p className="text-lg text-gray-600">
+                  {loading ? 'Loading...' : (patientData.name || 'Patient')}
+                </p>
               </div>
             </div>
             <TimeIcon className="h-10 w-10 text-yellow-500" />
@@ -163,8 +193,12 @@ const PatientApp: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Today's Wellness</p>
-                <p className="text-3xl font-bold">{patientData.todayScore}%</p>
-                <p className="text-sm opacity-90">Feeling {patientData.mood}</p>
+                <p className="text-3xl font-bold">
+                  {loading ? '...' : `${patientData.todayScore}%`}
+                </p>
+                <p className="text-sm opacity-90">
+                  Feeling {loading ? '...' : patientData.mood}
+                </p>
               </div>
               <HeartIcon className="h-12 w-12 opacity-80" />
             </div>

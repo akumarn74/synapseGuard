@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -14,6 +14,39 @@ import {
 } from '@heroicons/react/24/outline';
 
 const ProviderDashboard: React.FC = () => {
+  const [riskSummary, setRiskSummary] = useState({
+    summary: {
+      high_risk_count: 0,
+      moderate_risk_count: 0,
+      stable_count: 0,
+      high_risk_patients: [],
+      moderate_risk_patients: [],
+      total_patients: 0
+    }
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRiskSummary();
+    // Refresh every 2 minutes for provider dashboard
+    const interval = setInterval(fetchRiskSummary, 120000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchRiskSummary = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/provider/patient-risk-summary');
+      const data = await response.json();
+      if (data.success) {
+        setRiskSummary(data);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch risk summary:', error);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -68,7 +101,9 @@ const ProviderDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">High Risk Patients</p>
-                  <p className="text-3xl font-bold text-red-600">3</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {loading ? '...' : riskSummary.summary.high_risk_count}
+                  </p>
                   <p className="text-sm text-red-600">Require immediate attention</p>
                 </div>
                 <ExclamationTriangleIcon className="h-12 w-12 text-red-500" />
@@ -79,7 +114,9 @@ const ProviderDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Moderate Risk</p>
-                  <p className="text-3xl font-bold text-yellow-600">8</p>
+                  <p className="text-3xl font-bold text-yellow-600">
+                    {loading ? '...' : riskSummary.summary.moderate_risk_count}
+                  </p>
                   <p className="text-sm text-yellow-600">Enhanced monitoring</p>
                 </div>
                 <ChartBarIcon className="h-12 w-12 text-yellow-500" />
@@ -90,7 +127,9 @@ const ProviderDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Stable Patients</p>
-                  <p className="text-3xl font-bold text-green-600">24</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {loading ? '...' : riskSummary.summary.stable_count}
+                  </p>
                   <p className="text-sm text-green-600">Standard care protocol</p>
                 </div>
                 <HeartIcon className="h-12 w-12 text-green-500" />

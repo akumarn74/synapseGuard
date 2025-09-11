@@ -45,52 +45,41 @@ class MedicalKnowledgeAgent(BaseAgent):
     
     async def _generate_medical_knowledge(self, query: str, patient_condition: str, 
                                         research_focus: List[str]) -> Dict[str, Any]:
-        """Generate comprehensive medical knowledge using AI"""
+        """Retrieve evidence-based medical knowledge from real research database"""
         try:
+            # Step 1: Search real medical research database
+            real_research_insights = await self._search_real_research_database(
+                query, patient_condition, research_focus
+            )
+            
+            # Step 2: If we have research papers, use them as the foundation
+            if real_research_insights:
+                medical_knowledge = await self._synthesize_research_findings(
+                    real_research_insights, query, patient_condition
+                )
+                return self._enhance_medical_knowledge(medical_knowledge, patient_condition)
+            
+            # Step 3: Fallback to AI only if no research found
             prompt = f"""
-            You are a leading medical researcher and clinician specializing in neurodegenerative diseases. Generate comprehensive, evidence-based medical knowledge.
-
+            Based on established medical literature, provide evidence-based knowledge for:
             QUERY: {query}
             PATIENT CONDITION: {patient_condition}
             RESEARCH FOCUS: {', '.join(research_focus) if research_focus else 'General care management'}
-
-            Generate detailed medical knowledge including:
-            1. Current best practices and evidence-based interventions
-            2. Recent research findings and breakthrough studies
-            3. Clinical guidelines and recommendations
-            4. Risk factors and prevention strategies
-            5. Intervention effectiveness data with statistical measures
-            6. Family and caregiver guidance
-            7. Technology and AI applications in care
-            8. Quality of life improvement strategies
-
-            For each section, provide:
-            - Specific, actionable recommendations
-            - Statistical evidence where applicable (improvement percentages, p-values, effect sizes)
-            - Timeline expectations for interventions
-            - Contraindications and limitations
-            - References to study methodologies (RCT, longitudinal, meta-analysis)
-
-            Format as comprehensive JSON with sections for best_practices, recent_research, clinical_guidelines, prevention, interventions, family_guidance, technology_applications, and quality_of_life.
+            
+            Note: Prioritize evidence-based interventions from peer-reviewed sources.
+            Format as JSON with sections for best_practices, recent_research, clinical_guidelines, prevention, interventions, family_guidance.
             """
 
-            response = await self.llm_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500,
-                temperature=0.2  # Low temperature for medical accuracy
-            )
-            
-            ai_response = response.choices[0].message.content.strip()
+            ai_response = await self.generate_ai_response(prompt)
             
             try:
-                medical_knowledge = json.loads(ai_response)
+                medical_knowledge = self.safe_json_loads(ai_response)
                 return self._enhance_medical_knowledge(medical_knowledge, patient_condition)
-            except json.JSONDecodeError:
+            except:
                 return self._parse_medical_knowledge_from_text(ai_response, patient_condition)
             
         except Exception as e:
-            print(f"AI medical knowledge generation failed: {e}")
+            print(f"Medical knowledge retrieval failed: {e}")
             return await self._generate_fallback_knowledge(query, patient_condition)
     
     async def _enhance_medical_knowledge(self, knowledge: Dict, condition: str) -> Dict[str, Any]:
@@ -305,38 +294,83 @@ class MedicalKnowledgeAgent(BaseAgent):
         
         return ' '.join(list(keywords)[:15])  # Limit to 15 keywords
     
+    async def _search_real_research_database(self, query: str, condition: str, research_focus: List[str]) -> List[Dict]:
+        """Search real medical research database for relevant papers"""
+        try:
+            # Combine search terms
+            search_terms = [query, condition] + (research_focus or [])
+            search_query = ' '.join(search_terms).lower()
+            
+            # Search medical_knowledge table for real research (exclude AI-generated)
+            results = await self.full_text_search(
+                search_query,
+                'medical_knowledge',
+                ['title', 'content', 'keywords'],
+                limit=10
+            )
+            
+            # Filter out AI-generated content
+            real_research = [
+                paper for paper in results 
+                if 'AI Knowledge Generation' not in paper.get('source', '')
+                and 'ai_gen_' not in paper.get('knowledge_id', '')
+            ]
+            
+            return real_research[:5]  # Top 5 most relevant papers
+            
+        except Exception as e:
+            print(f"Real research database search failed: {e}")
+            return []
+    
+    async def _synthesize_research_findings(self, research_papers: List[Dict], 
+                                          query: str, condition: str) -> Dict[str, Any]:
+        """Synthesize findings from real research papers"""
+        try:
+            # Extract key findings from research papers
+            synthesized = {
+                'research_foundation': [],
+                'best_practices': [],
+                'recent_research': [],
+                'clinical_guidelines': [],
+                'prevention': [],
+                'interventions': [],
+                'family_guidance': [],
+                'evidence_level': 'peer_reviewed_research'
+            }
+            
+            for paper in research_papers:
+                paper_summary = {
+                    'title': paper.get('title', ''),
+                    'source': paper.get('source', ''),
+                    'relevance_score': paper.get('relevance', 0.0),
+                    'key_findings': paper.get('content', '')[:300] + '...'
+                }
+                synthesized['research_foundation'].append(paper_summary)
+                
+                # Extract specific recommendations from content
+                content = paper.get('content', '').lower()
+                if 'intervention' in content:
+                    synthesized['interventions'].append(f"From {paper.get('source', 'Research')}: {content[:200]}...")
+                if 'family' in content or 'caregiver' in content:
+                    synthesized['family_guidance'].append(f"From {paper.get('source', 'Research')}: {content[:200]}...")
+                if 'prevention' in content:
+                    synthesized['prevention'].append(f"From {paper.get('source', 'Research')}: {content[:200]}...")
+            
+            return synthesized
+            
+        except Exception as e:
+            print(f"Research synthesis failed: {e}")
+            return {'error': 'Research synthesis failed', 'papers_found': len(research_papers)}
+    
     async def _find_related_knowledge(self, new_knowledge: Dict, condition: str) -> List[Dict]:
         """Find existing related knowledge using similarity search"""
         try:
-            # Create search terms from new knowledge
-            search_terms = [
-                condition,
-                'intervention',
-                'treatment',
-                'management',
-                'care'
-            ]
+            # Search real research database first
+            real_research = await self._search_real_research_database(
+                condition, condition, ['treatment', 'intervention', 'care']
+            )
             
-            # Search existing knowledge
-            related_entries = []
-            for term in search_terms:
-                results = await self.full_text_search(
-                    term, 
-                    'medical_knowledge', 
-                    ['content', 'keywords'], 
-                    limit=3
-                )
-                related_entries.extend(results)
-            
-            # Remove duplicates and return top 5
-            seen_ids = set()
-            unique_entries = []
-            for entry in related_entries:
-                if entry.get('knowledge_id') not in seen_ids:
-                    seen_ids.add(entry['knowledge_id'])
-                    unique_entries.append(entry)
-            
-            return unique_entries[:5]
+            return real_research[:5]
             
         except Exception as e:
             print(f"Related knowledge search failed: {e}")
