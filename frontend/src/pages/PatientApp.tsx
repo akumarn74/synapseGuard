@@ -96,7 +96,8 @@ const PatientApp: React.FC = () => {
 
   const fetchPatientData = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/family/patient-status/${patientId}`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/family/patient-status/${patientId}`);
       const data = await response.json();
       if (data.success) {
         setPatientData({
@@ -110,6 +111,14 @@ const PatientApp: React.FC = () => {
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch patient data:', error);
+      // Fallback data for demo
+      setPatientData({
+        name: 'Margaret Wilson',
+        age: 72,
+        todayScore: 87,
+        mood: 'good',
+        lastActivity: 'Morning walk completed'
+      });
       setLoading(false);
     }
   };

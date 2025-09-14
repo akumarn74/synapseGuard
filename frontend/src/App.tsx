@@ -34,12 +34,15 @@ const App: React.FC = () => {
         
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/live-demo" element={<LiveDemo />} />
           <Route path="/demo" element={<LiveDemo />} />
+          <Route path="/family" element={<FamilyPortal />} />
           <Route path="/family-preview" element={<FamilyPortal />} />
+          <Route path="/provider" element={<ProviderDashboard />} />
           <Route path="/provider-preview" element={<ProviderDashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin-preview" element={<AdminDashboard />} />
           <Route path="/patient" element={<PatientApp />} />
-          {/* <Route path="/investor" element={<InvestorDemo />} /> */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
