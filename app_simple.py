@@ -48,10 +48,12 @@ def update_agent_activity(agent_list):
         
         for agent_type in agent_list:
             # Insert agent activity in interventions table
+            intervention_id = f"demo_{agent_type}_{int(current_time.timestamp())}"
             cursor.execute("""
-                INSERT INTO interventions (patient_id, agent_type, intervention_type, description, timestamp, effectiveness_score)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO interventions (intervention_id, patient_id, agent_type, intervention_type, description, timestamp, effectiveness_score)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
+                intervention_id,
                 'demo_patient',
                 agent_type,
                 'demo_analysis',

@@ -100,44 +100,57 @@ def add_realtime_routes(app):
             print(f"Recent activity from DB: {recent_activity}")
             
             for agent_key, agent_info in agent_map.items():
-                activity = next((a for a in recent_activity if a['agent_type'] == agent_key), None)
-                print(f"Agent {agent_key}: activity = {activity}")
+                # Map agent keys to database agent_type values (handle both underscore and camelCase)
+                db_agent_types = [agent_key, agent_key.replace('_', ''), ''.join(word.capitalize() for word in agent_key.split('_'))]
+                activity = next((a for a in recent_activity if a['agent_type'] in db_agent_types), None)
+                print(f"Agent {agent_key}: activity = {activity} (checked types: {db_agent_types})")
                 
-                # For demo purposes, always use realistic simulated activity
-                # This provides a better presentation experience
-                if agent_key == 'orchestrator':
-                    # Orchestrator is always most active
-                    last_activity_time = current_time - timedelta(seconds=30)
-                    processing_count = max(127, activity['count'] if activity else 127)
-                    status = 'active'
-                elif agent_key == 'cognitive_analyzer':
-                    last_activity_time = current_time - timedelta(minutes=8)
-                    processing_count = 34
-                    status = 'active'
-                elif agent_key == 'crisis_prevention':
-                    last_activity_time = current_time - timedelta(minutes=15)
-                    processing_count = 19
-                    status = 'idle'
-                elif agent_key == 'medical_knowledge':
-                    last_activity_time = current_time - timedelta(minutes=5)
-                    processing_count = 42
-                    status = 'active'
-                elif agent_key == 'pattern_learning':
-                    last_activity_time = current_time - timedelta(minutes=12)
-                    processing_count = 28
-                    status = 'idle'
-                elif agent_key == 'care_orchestration':
-                    last_activity_time = current_time - timedelta(minutes=22)
-                    processing_count = 16
-                    status = 'idle'
-                elif agent_key == 'family_intelligence':
-                    last_activity_time = current_time - timedelta(minutes=35)
-                    processing_count = 8
-                    status = 'idle'
-                else:  # therapeutic_intervention
-                    last_activity_time = current_time - timedelta(minutes=45)
-                    processing_count = 12
-                    status = 'idle'
+                # Use real database activity if available, with realistic fallback values
+                if activity:
+                    last_activity_time = activity['last_activity']
+                    processing_count = activity['count']
+                    # Determine status based on recent activity
+                    minutes_since_activity = (current_time - last_activity_time).total_seconds() / 60
+                    if minutes_since_activity <= 5:
+                        status = 'active'
+                    elif minutes_since_activity <= 15:
+                        status = 'processing'
+                    else:
+                        status = 'idle'
+                else:
+                    # Fallback values for better demo presentation when no DB activity
+                    if agent_key == 'orchestrator':
+                        last_activity_time = current_time - timedelta(seconds=30)
+                        processing_count = 127
+                        status = 'active'
+                    elif agent_key == 'cognitive_analyzer':
+                        last_activity_time = current_time - timedelta(minutes=8)
+                        processing_count = 34
+                        status = 'active'
+                    elif agent_key == 'crisis_prevention':
+                        last_activity_time = current_time - timedelta(minutes=15)
+                        processing_count = 19
+                        status = 'idle'
+                    elif agent_key == 'medical_knowledge':
+                        last_activity_time = current_time - timedelta(minutes=5)
+                        processing_count = 42
+                        status = 'active'
+                    elif agent_key == 'pattern_learning':
+                        last_activity_time = current_time - timedelta(minutes=12)
+                        processing_count = 28
+                        status = 'idle'
+                    elif agent_key == 'care_orchestration':
+                        last_activity_time = current_time - timedelta(minutes=22)
+                        processing_count = 16
+                        status = 'idle'
+                    elif agent_key == 'family_intelligence':
+                        last_activity_time = current_time - timedelta(minutes=35)
+                        processing_count = 8
+                        status = 'idle'
+                    else:  # therapeutic_intervention
+                        last_activity_time = current_time - timedelta(minutes=45)
+                        processing_count = 12
+                        status = 'idle'
                 
                 agents.append({
                     'name': agent_info['name'],
