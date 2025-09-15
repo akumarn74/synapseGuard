@@ -36,6 +36,38 @@ def get_db_connection():
         ssl_disabled=False
     )
 
+def update_agent_activity(agent_list):
+    """Update agent activity timestamps for demo tracking"""
+    try:
+        db = get_db_connection()
+        if not db:
+            return
+            
+        cursor = db.cursor()
+        current_time = datetime.now()
+        
+        for agent_type in agent_list:
+            # Insert agent activity in interventions table
+            cursor.execute("""
+                INSERT INTO interventions (patient_id, agent_type, intervention_type, description, timestamp, effectiveness_score)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                'demo_patient',
+                agent_type,
+                'demo_analysis',
+                f'{agent_type.replace("_", " ").title()} completed demo analysis',
+                current_time,
+                0.95
+            ))
+        
+        db.commit()
+        cursor.close()
+        db.close()
+        print(f"Updated activity for agents: {agent_list}")
+        
+    except Exception as e:
+        print(f"Failed to update agent activity: {e}")
+
 @app.route('/')
 def root():
     """Root endpoint"""
@@ -167,6 +199,9 @@ def demo_normal_day():
         # Run AI analysis asynchronously
         result = asyncio.run(orchestrator.process_patient_data(patient_id, sensor_data))
         
+        # Update agent activity tracking
+        update_agent_activity(['cognitive_analyzer', 'crisis_prevention', 'medical_knowledge', 'orchestrator'])
+        
         db_conn.close()
         
         return jsonify({
@@ -196,6 +231,9 @@ def demo_concerning_patterns():
         # Run AI analysis asynchronously
         result = asyncio.run(orchestrator.process_patient_data(patient_id, sensor_data))
         
+        # Update agent activity tracking
+        update_agent_activity(['cognitive_analyzer', 'crisis_prevention', 'care_orchestration', 'family_intelligence', 'orchestrator'])
+        
         db_conn.close()
         
         return jsonify({
@@ -224,6 +262,9 @@ def demo_crisis_prevention():
         
         # Run AI analysis asynchronously
         result = asyncio.run(orchestrator.process_patient_data(patient_id, sensor_data))
+        
+        # Update agent activity tracking - all agents involved in crisis
+        update_agent_activity(['cognitive_analyzer', 'crisis_prevention', 'care_orchestration', 'therapeutic_intervention', 'family_intelligence', 'medical_knowledge', 'orchestrator'])
         
         db_conn.close()
         
