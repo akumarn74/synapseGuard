@@ -58,33 +58,42 @@ def add_realtime_routes(app):
                 try:
                     cursor = db.cursor(dictionary=True)
                     
-                    # Get recent interventions (agent activity)
-                    cursor.execute("""
-                        SELECT agent_type, COUNT(*) as count, MAX(timestamp) as last_activity
-                        FROM interventions 
-                        WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOURS)
-                        GROUP BY agent_type
-                        ORDER BY last_activity DESC
-                    """)
-                    recent_activity = cursor.fetchall()
+                    # Try to get recent interventions (agent activity) - handle table not existing
+                    try:
+                        cursor.execute("""
+                            SELECT agent_type, COUNT(*) as count, MAX(timestamp) as last_activity
+                            FROM interventions 
+                            WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                            GROUP BY agent_type
+                            ORDER BY last_activity DESC
+                        """)
+                        recent_activity = cursor.fetchall()
+                    except Exception as table_error:
+                        print(f"Interventions table query error: {table_error}")
+                        recent_activity = []
                     
-                    # Get system stats
-                    cursor.execute("""
-                        SELECT 
-                            COUNT(*) as total_patients,
-                            (SELECT COUNT(*) FROM behavioral_patterns) as total_patterns,
-                            (SELECT COUNT(*) FROM interventions) as total_interventions,
-                            (SELECT COUNT(*) FROM medical_knowledge) as knowledge_entries
-                        FROM patients
-                    """)
-                    db_stats = cursor.fetchone()
-                    if db_stats:
-                        stats = db_stats
+                    # Try to get system stats - handle missing tables gracefully
+                    try:
+                        cursor.execute("""
+                            SELECT 
+                                COUNT(*) as total_patients,
+                                (SELECT COUNT(*) FROM behavioral_patterns) as total_patterns,
+                                (SELECT COUNT(*) FROM interventions) as total_interventions,
+                                (SELECT COUNT(*) FROM medical_knowledge) as knowledge_entries
+                            FROM patients
+                        """)
+                        db_stats = cursor.fetchone()
+                        if db_stats:
+                            stats = db_stats
+                    except Exception as stats_error:
+                        print(f"Stats query error: {stats_error}")
+                        # Use fallback stats
+                        pass
                         
                     cursor.close()
                     db.close()
                 except Exception as db_error:
-                    print(f"Database query error: {db_error}")
+                    print(f"Database connection error: {db_error}")
             
             # Create enhanced agent status with realistic activity for demo
             current_time = datetime.now()
